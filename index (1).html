@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Do'kon</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root{
+    --bg:#f3f6fb; --card:#ffffff; --ink:#14213d; --mute:#5f6b7e; --line:#e2e8f2;
+    --accent:#0a5cf5; --accent-ink:#ffffff; --accent-soft:#e8f0ff;
+    --ok:#1f9d55; --ok-soft:#e5f6ec; --warn:#d93025; --shadow:0 1px 2px rgba(20,33,61,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{--bg:#0e1420; --card:#171f2e; --ink:#eef2fa; --mute:#93a0b6; --line:#26324a;
+      --accent:#4d8dff; --accent-ink:#06142e; --accent-soft:#1c2b4a; --ok:#4cc38a; --ok-soft:#173226; --warn:#ff7b72;}
+  }
+  *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);
+       padding-bottom:calc(84px + env(safe-area-inset-bottom,0px));min-height:100vh}
+  header{padding:16px 16px 4px;font-size:20px;font-weight:700}
+  header:empty{display:none}
+  button{font:inherit;border:0;border-radius:12px;cursor:pointer}
+
+  /* tepadagi ikkita kartochka */
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px 16px 0}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:2px;box-shadow:var(--shadow)}
+  .stat .top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .stat small{color:var(--mute);font-size:13px}
+  .stat b{font-size:17px;color:var(--accent)}
+  .stat.ok b{color:var(--ok)}
+  .ic{width:34px;height:34px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+  .stat.ok .ic{background:var(--ok-soft);color:var(--ok)}
+  .banner{margin:12px 16px 0;padding:16px;border-radius:16px;border:1px solid var(--line);background:linear-gradient(135deg,var(--accent-soft),var(--card))}
+  .banner h3{font-size:18px;line-height:1.25}
+  .banner p{display:flex;gap:10px;align-items:center;font-size:14px;margin-top:10px}
+  .ck{width:22px;height:22px;border-radius:6px;background:var(--ok);color:#fff;display:grid;place-items:center;font-size:13px;flex:none}
+  .sec{display:flex;align-items:center;gap:8px;font-weight:700;padding:18px 16px 0}
+
+  .search{padding:10px 16px 0}
+  .search input{width:100%;height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:16px}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:10px 16px 0;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chips button{flex:none;padding:9px 15px;border-radius:20px;background:var(--card);color:var(--ink);border:1px solid var(--line);font-size:14px}
+  .chips button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px 16px}
+  .p{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow)}
+  .p .img{overflow:hidden;aspect-ratio:1;display:grid;place-items:center;font-size:56px;background:var(--accent-soft)}
+  .p .b{padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1}
+  .p .n{font-size:15px;font-weight:600}
+  .p .pr{font-size:16px;color:var(--accent);font-weight:700;margin-bottom:6px}
+  .add{margin-top:auto;height:44px;background:var(--accent);color:var(--accent-ink);font-weight:600}
+  .qty{display:flex;align-items:center;justify-content:space-between;margin-top:auto}
+  .qty button{width:40px;height:40px;background:var(--accent-soft);color:var(--accent);font-size:20px;font-weight:600}
+  .qty b{font-size:16px}
+
+  nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+  nav button{flex:1;padding:10px 0 9px;background:none;border-radius:0;color:var(--mute);font-size:12px;position:relative}
+  nav button svg{display:block;margin:0 auto 3px}
+  nav button.on{color:var(--accent);font-weight:700}
+  .badge{position:absolute;top:4px;left:calc(50% + 6px);background:var(--warn);color:#fff;border-radius:10px;font-size:11px;padding:1px 6px;display:none;font-style:normal}
+
+  .row{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin:0 16px 10px;box-shadow:var(--shadow)}
+  .row .em{font-size:30px;width:52px;height:52px;display:grid;place-items:center;overflow:hidden;border-radius:12px;background:var(--accent-soft);flex:none}
+  .row .i{flex:1;min-width:0}.row .i b{display:block;font-size:15px}.row .i small{color:var(--mute);font-size:13px}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:12px 16px;box-shadow:var(--shadow)}
+  .total{display:flex;justify-content:space-between;font-size:18px;font-weight:700;margin:8px 16px 12px}
+  .main{display:block;width:calc(100% - 32px);margin:0 16px;height:54px;border-radius:14px;background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:17px}
+  .main:disabled{opacity:.5}
+  .card{font-size:22px;letter-spacing:2px;font-weight:700;margin:6px 0;color:var(--accent)}
+  label{display:block;font-size:14px;color:var(--mute);margin:14px 0 6px}
+  input[type=number]{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:16px}
+  input[type=tel],textarea,.f{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:16px}
+  textarea{resize:none}
+  .amt{display:flex;align-items:center;height:60px;border:1px solid var(--line);border-radius:12px;background:var(--card);padding:0 14px}
+  .amt input{border:0;background:none;padding:0;font-size:24px;font-weight:500;height:100%;outline:0}
+  .amt span{color:var(--mute);font-size:16px}
+  .loc{margin-top:10px;width:100%;height:46px;background:var(--accent-soft);color:var(--accent);font-weight:600}
+  .file{display:block;border:2px dashed var(--line);border-radius:12px;padding:16px;text-align:center;color:var(--mute);cursor:pointer}
+  .file img{max-width:100%;max-height:220px;border-radius:8px;display:block;margin:0 auto 8px}
+  .err{color:var(--warn);font-size:14px;margin:8px 16px;min-height:18px}
+  .empty{text-align:center;color:var(--mute);padding:60px 24px}
+  .done{text-align:center;padding:70px 24px}
+  .okc{width:76px;height:76px;border-radius:50%;background:var(--ok-soft);color:var(--ok);display:grid;place-items:center;font-size:38px;font-weight:700;margin:0 auto}
+  .sm{width:40px;height:40px;background:var(--accent-soft);color:var(--accent);font-size:16px}
+  .ghost{display:block;width:calc(100% - 32px);margin:10px 16px 0;height:50px;background:none;color:var(--mute);border:1px solid var(--line)}
+  .thumb{aspect-ratio:1;max-width:180px;margin:0 auto 6px;border-radius:14px;background:var(--accent-soft);display:grid;place-items:center;overflow:hidden;font-size:44px}
+  .p.out .img{opacity:.4}
+  .p .tag{position:absolute;top:8px;left:8px;background:var(--warn);color:#fff;font-size:12px;font-weight:700;padding:3px 9px;border-radius:8px}
+  .p{position:relative}
+  .soldtag{margin-top:auto;height:44px;display:grid;place-items:center;border-radius:12px;background:var(--line);color:var(--mute);font-weight:700}
+  .left{font-size:12px;color:var(--warn)}
+  .hide{display:none!important}
+</style>
+</head>
+<body>
+<header id="title">Tovarlar</header>
+
+<!-- Tovarlar -->
+<section id="v-shop">
+  <div class="stats">
+    <div class="stat"><div class="top"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11h10.2L20 7H6.5"/><circle cx="9" cy="19" r="1.4"/><circle cx="17" cy="19" r="1.4"/></svg></div><small>Savatda</small></div><b id="stCount">0 ta</b><small>tanlangan tovar</small></div>
+    <div class="stat ok"><div class="top"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg></div><small>Jami summa</small></div><b id="stSum">0 so'm</b><small>to'lov uchun</small></div>
+  </div>
+  <div class="banner">
+    <h3>Kerakli tovarni toping va buyurtma bering</h3>
+    <p><span class="ck">✓</span>Qidiring yoki kategoriya tanlang</p>
+    <p><span class="ck">✓</span>Savatga soling, chekni yuboring</p>
+  </div>
+  <div class="sec"><span class="ic" style="width:28px;height:28px;border-radius:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l1.5-5h15L21 10"/><path d="M4 10v10h16V10"/><path d="M9 20v-6h6v6"/></svg></span>Tovarlar</div>
+  <div class="search"><input type="search" id="q" placeholder="🔍 Tovar qidirish..." autocomplete="off"></div>
+  <div class="chips" id="chips"></div>
+  <div class="grid" id="grid"></div>
+</section>
+
+<!-- Savat -->
+<section id="v-cart" class="hide">
+  <div id="cartList"></div>
+  <div id="cartFoot" class="hide">
+    <div class="total"><span>Jami</span><span id="cartTotal"></span></div>
+    <button class="main" id="toPay">To'lovga o'tish</button>
+  </div>
+</section>
+
+<!-- Admin panel -->
+<section id="v-admin" class="hide">
+  <div id="aList">
+    <div id="adminList"></div>
+    <button class="main" id="addNew">➕ Yangi tovar</button>
+  </div>
+  <div id="aEdit" class="hide">
+    <div class="box">
+      <label class="file" for="aPhoto" style="border:0;padding:0">
+        <div class="thumb" id="aThumb">📦</div><span>🖼 Rasmni tanlash</span>
+      </label>
+      <input type="file" id="aPhoto" accept="image/*" class="hide">
+      <label for="aName">Nomi</label><input class="f" type="text" id="aName" placeholder="Tovar nomi">
+      <label for="aPrice">Narxi (so'm)</label><input class="f" type="number" id="aPrice" inputmode="numeric">
+      <label for="aStock">Soni (0 = Sotildi)</label><input class="f" type="number" id="aStock" inputmode="numeric">
+      <label for="aCat">Kategoriya</label><input class="f" type="text" id="aCat" list="catList" placeholder="Masalan: Kiyim">
+      <datalist id="catList"></datalist>
+    </div>
+    <div class="err" id="aErr"></div>
+    <button class="main" id="aSave">Saqlash</button>
+    <button class="ghost" id="aCancel">Bekor qilish</button>
+  </div>
+</section>
+
+<!-- To'lov -->
+<section id="v-pay" class="hide">
+  <div class="box">
+    <div style="font-weight:700">🚚 Yetkazib berish</div>
+    <label for="phone">Telefon raqam</label>
+    <input type="tel" id="phone" placeholder="+998 90 123 45 67">
+    <label for="addr">Manzil</label>
+    <textarea id="addr" rows="2" placeholder="Shahar, tuman, ko'cha, uy, mo'ljal"></textarea>
+    <button class="loc" id="locBtn" type="button">📍 Joylashuvimni yuborish</button>
+    <div id="locInfo" style="color:var(--mute);font-size:13px;margin-top:6px"></div>
+  </div>
+  <div class="box">
+    <div style="color:var(--mute);font-size:14px">To'lov qilinadigan karta</div>
+    <div class="card" id="cardNum"></div>
+    <div id="cardOwner" style="color:var(--mute)"></div>
+    <div class="total" style="margin:12px 0 0"><span>To'lash summasi</span><span id="payTotal"></span></div>
+  </div>
+  <div class="box">
+    <label for="amount" style="margin-top:0">To'lagan summangizni kiriting (so'm)</label>
+    <div class="amt"><input type="number" id="amount" inputmode="numeric" placeholder="0"><span>so'm</span></div>
+    <label>To'lov chekini yuklang</label>
+    <label class="file" id="fileBox" for="photo"><span id="fileText">📎 Chek rasmini tanlang</span></label>
+    <input type="file" id="photo" accept="image/*" class="hide">
+  </div>
+  <div class="err" id="err"></div>
+  <button class="main" id="send">Chekni yuborish</button>
+</section>
+
+<!-- Tayyor -->
+<section id="v-done" class="hide">
+  <div class="done"><div class="okc">✓</div>
+    <h2 style="margin:12px 0 6px">Chek yuborildi</h2>
+    <p style="color:var(--mute)">Admin tasdiqlagach, bot sizga xabar yuboradi.</p></div>
+</section>
+
+<nav id="nav">
+  <button data-v="shop" class="on"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l1.5-5h15L21 10"/><path d="M4 10v10h16V10"/><path d="M9 20v-6h6v6"/></svg>Tovarlar</button>
+  <button data-v="cart"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11h10.2L20 7H6.5"/><circle cx="9" cy="19" r="1.4"/><circle cx="17" cy="19" r="1.4"/></svg>Savat<i class="badge" id="badge">0</i></button>
+  <button data-v="admin" class="hide"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>Admin</button>
+</nav>
+
+<script>
+// ===== SOZLAMALAR =====
+const API_BASE = "https://sizning-server.uz:8080"; // bot.py ishlayotgan manzil (HTTPS), oxirida / yo'q
+const CARD = "4466 1361 5152 9313";
+const CARD_OWNER = "Karta egasi: Jalilov Muxammadmuso";
+// Server ishlamasa, quyidagi namunaviy tovarlar ko'rinadi (brauzerda sinash uchun)
+let PRODUCTS = [
+  {id:1, name:"Krossovka",    price:350000, emoji:"👟", cat:"Poyabzal"},
+  {id:2, name:"Futbolka",     price:120000, emoji:"👕", cat:"Kiyim"},
+  {id:3, name:"Ryukzak",      price:210000, emoji:"🎒", cat:"Aksessuar"},
+  {id:4, name:"Quloqchin",    price:180000, emoji:"🎧", cat:"Elektronika"},
+  {id:5, name:"Soat",         price:450000, emoji:"⌚", cat:"Aksessuar"},
+  {id:6, name:"Ko'zoynak",    price:95000,  emoji:"🕶", cat:"Aksessuar"},
+];
+// Kategoriyalar tovarlardan avtomatik olinadi
+let CATS = [];
+const makeCats = () => { CATS = ["Hammasi", ...new Set(PRODUCTS.map(p => p.cat))]; };
+// ======================
+
+// Brauzerda sinab ko'rish uchun: Telegram bo'lmasa ham ishlaydi
+const tg = (window.Telegram && window.Telegram.WebApp) || {ready(){},expand(){},close(){},initData:""};
+tg.ready(); tg.expand();
+let activeCat = "Hammasi", query = "";
+const $ = id => document.getElementById(id);
+const pic = p => p.image ? `<img src="${p.image}" alt="" style="width:100%;height:100%;object-fit:cover">` : p.emoji;
+const left = p => p.stock ?? 999;
+const esc = t => String(t).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => n.toLocaleString("ru-RU").replace(/\u00a0/g," ") + " so'm";
+const cart = {}; // id -> qty
+let photoFile = null;
+
+const total = () => PRODUCTS.reduce((s,p)=>s+(cart[p.id]||0)*p.price,0);
+const count = () => Object.values(cart).reduce((a,b)=>a+b,0);
+
+function show(v){
+  ["shop","cart","pay","done","admin"].forEach(x=>$("v-"+x).classList.toggle("hide",x!==v));
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
+  $("nav").classList.toggle("hide", v==="pay"||v==="done");
+  $("title").textContent = {shop:"Tovarlar",cart:"Savat",pay:"To'lov",done:"",admin:"Admin panel"}[v];
+  if(v==="cart") renderCart(); if(v==="pay") renderPay(); if(v==="admin") renderAdmin();
+}
+
+function renderChips(){
+  $("chips").innerHTML = CATS.map(c=>`<button class="${c===activeCat?"on":""}" data-c="${c}">${c}</button>`).join("");
+}
+$("chips").onclick = e => { const b=e.target.closest("button"); if(!b) return; activeCat=b.dataset.c; renderChips(); renderShop(); };
+$("q").oninput = e => { query=e.target.value.trim().toLowerCase(); renderShop(); };
+
+function renderShop(){
+  const list = PRODUCTS.filter(p => (activeCat==="Hammasi"||p.cat===activeCat) && p.name.toLowerCase().includes(query));
+  if(!list.length){ $("grid").innerHTML = `<div class="empty" style="grid-column:1/-1">Hech narsa topilmadi.<br>Boshqa nom yozib ko'ring.</div>`; return; }
+  $("grid").innerHTML = list.map(p=>{
+    const q = cart[p.id]||0, out = left(p) <= 0;
+    return `<div class="p${out?" out":""}"><div class="img">${pic(p)}</div>${out?`<span class="tag">Sotildi</span>`:""}<div class="b">
+      <div class="n">${esc(p.name)}</div><div class="pr">${fmt(p.price)}</div>
+      ${!out && left(p) <= 5 ? `<div class="left">Qoldi: ${left(p)} ta</div>` : ""}
+      ${out ? `<div class="soldtag">Sotildi</div>`
+        : q? `<div class="qty"><button onclick="chg(${p.id},-1)">−</button><b>${q}</b><button onclick="chg(${p.id},1)">+</button></div>`
+         : `<button class="add" onclick="chg(${p.id},1)">Savatga solish</button>`}
+    </div></div>`}).join("");
+}
+
+function chg(id,d){
+  const pr = PRODUCTS.find(x=>x.id===id);
+  if(pr && d>0 && (cart[id]||0) >= left(pr)) return;
+  cart[id]=Math.max(0,(cart[id]||0)+d); if(!cart[id]) delete cart[id];
+  renderShop(); badge(); if(!$("v-cart").classList.contains("hide")) renderCart();
+}
+function badge(){ const c=count(); $("badge").textContent=c; $("badge").style.display=c?"block":"none";
+  $("stCount").textContent=c+" ta"; $("stSum").textContent=fmt(total()); }
+
+function renderCart(){
+  const items = PRODUCTS.filter(p=>cart[p.id]);
+  $("cartList").innerHTML = items.length ? items.map(p=>`
+    <div class="row"><div class="em">${pic(p)}</div>
+      <div class="i"><b>${esc(p.name)}</b><small>${fmt(p.price)}</small></div>
+      <div class="qty" style="gap:10px"><button onclick="chg(${p.id},-1)">−</button><b>${cart[p.id]}</b><button onclick="chg(${p.id},1)">+</button></div>
+    </div>`).join("") : `<div class="empty">Savat bo'sh.<br>Tovarlar bo'limidan tanlang.</div>`;
+  $("cartFoot").classList.toggle("hide",!items.length);
+  $("cartTotal").textContent = fmt(total());
+}
+
+function renderPay(){
+  $("cardNum").textContent=CARD; $("cardOwner").textContent=CARD_OWNER;
+  $("payTotal").textContent=fmt(total()); $("err").textContent="";
+}
+
+$("nav").onclick = e => { const b=e.target.closest("button"); if(b) show(b.dataset.v); };
+$("toPay").onclick = () => show("pay");
+$("photo").onchange = e => {
+  photoFile = e.target.files[0]; if(!photoFile) return;
+  $("fileBox").innerHTML = `<img src="${URL.createObjectURL(photoFile)}"><span>Boshqa rasm tanlash</span>`;
+};
+
+let geo = null;
+$("locBtn").onclick = () => {
+  if(!navigator.geolocation) return $("locInfo").textContent="Joylashuvni aniqlab bo'lmadi. Manzilni yozing.";
+  $("locInfo").textContent="Aniqlanmoqda...";
+  navigator.geolocation.getCurrentPosition(
+    p => { geo = {lat:p.coords.latitude, lon:p.coords.longitude}; $("locInfo").textContent="✅ Joylashuv qo'shildi"; },
+    () => $("locInfo").textContent="Ruxsat berilmadi. Manzilni yozib qoldiring.",
+    {enableHighAccuracy:true, timeout:10000});
+};
+
+$("send").onclick = async () => {
+  const phone = $("phone").value.trim(), addr = $("addr").value.trim();
+  if(phone.replace(/\D/g,"").length < 9) return $("err").textContent="Telefon raqamni to'g'ri kiriting.";
+  if(addr.length < 5) return $("err").textContent="Yetkazib berish manzilini yozing.";
+  const amount = parseInt($("amount").value,10);
+  if(!amount) return $("err").textContent="To'lagan summangizni kiriting.";
+  if(amount !== total()) return $("err").textContent=`Summa ${fmt(total())} bo'lishi kerak.`;
+  if(!photoFile) return $("err").textContent="Chek rasmini yuklang.";
+  $("send").disabled=true; $("send").textContent="Yuborilmoqda...";
+  const fd = new FormData();
+  fd.append("initData", tg.initData);
+  fd.append("amount", amount);
+  fd.append("phone", phone);
+  fd.append("address", addr);
+  if(geo){ fd.append("lat", geo.lat); fd.append("lon", geo.lon); }
+  fd.append("cart", JSON.stringify(PRODUCTS.filter(p=>cart[p.id]).map(p=>({id:p.id,qty:cart[p.id]}))));
+  fd.append("photo", photoFile);
+  try{
+    const r = await fetch(API_BASE+"/api/order",{method:"POST",body:fd});
+    const j = await r.json();
+    if(!j.ok){
+      $("err").textContent = j.error==="stock"
+        ? `«${j.name}» yetarli emas (qoldi: ${j.left} ta). Savatni yangilang.`
+        : "Yuborib bo'lmadi. Qayta urinib ko'ring.";
+      $("send").disabled=false; $("send").textContent="Chekni yuborish";
+      await loadProducts(); refreshShop(); return;
+    }
+    show("done"); setTimeout(()=>tg.close(),2500);
+  }catch(e){
+    $("err").textContent="Yuborib bo'lmadi. Qayta urinib ko'ring.";
+    $("send").disabled=false; $("send").textContent="Chekni yuborish";
+  }
+};
+
+// ===== Admin panel =====
+let isAdmin = false, editId = null, editPhoto = null;
+
+async function loadProducts(){
+  try {
+    const list = await (await fetch(API_BASE + "/api/products")).json();
+    if (Array.isArray(list)) PRODUCTS = list;
+  } catch (e) { /* server yo'q: namunaviy tovarlar */ }
+  makeCats();
+}
+function refreshShop(){ Object.keys(cart).forEach(id=>{ if(!PRODUCTS.some(p=>p.id==id)) delete cart[id]; });
+  makeCats(); renderChips(); renderShop(); badge(); }
+
+async function checkAdmin(){
+  if(!tg.initData) return;               // Telegramdan tashqarida admin yo'q
+  try {
+    const fd = new FormData(); fd.append("initData", tg.initData);
+    isAdmin = !!(await (await fetch(API_BASE + "/api/me", {method:"POST", body:fd})).json()).admin;
+  } catch (e) {}
+  document.querySelector('nav button[data-v="admin"]').classList.toggle("hide", !isAdmin);
+}
+
+function renderAdmin(){
+  $("aEdit").classList.add("hide"); $("aList").classList.remove("hide");
+  $("adminList").innerHTML = PRODUCTS.map(p=>`
+    <div class="row"><div class="em">${pic(p)}</div>
+      <div class="i"><b>${esc(p.name)}</b><small>${fmt(p.price)} · ${esc(p.cat)}</small><small style="display:block;color:${left(p)<=0?"var(--warn)":"var(--ok)"}">${left(p)<=0?"🔴 Sotildi":"🟢 Sotuvda: "+left(p)+" ta"}</small></div>
+      <button class="sm" onclick="editP(${p.id})">✏️</button>
+      <button class="sm" onclick="delP(${p.id})">🗑</button>
+    </div>`).join("") || `<div class="empty">Tovar yo'q. Yangi tovar qo'shing.</div>`;
+}
+
+function editP(id){
+  const p = PRODUCTS.find(x=>x.id===id) || {name:"",price:"",cat:"",emoji:"📦"};
+  editId = p.id || null; editPhoto = null;
+  $("aName").value=p.name; $("aPrice").value=p.price; $("aStock").value=p.stock ?? 1; $("aCat").value=p.cat||""; $("aErr").textContent="";
+  $("aThumb").innerHTML = pic(p);
+  $("catList").innerHTML = CATS.filter(c=>c!=="Hammasi").map(c=>`<option value="${esc(c)}">`).join("");
+  $("aList").classList.add("hide"); $("aEdit").classList.remove("hide");
+}
+$("addNew").onclick = () => editP(null);
+$("aCancel").onclick = renderAdmin;
+$("aPhoto").onchange = e => {
+  editPhoto = e.target.files[0]; if(!editPhoto) return;
+  $("aThumb").innerHTML = `<img src="${URL.createObjectURL(editPhoto)}" style="width:100%;height:100%;object-fit:cover">`;
+};
+
+// Rasmni yuborishdan oldin kichraytiramiz (tezroq yuklanadi)
+const compress = file => new Promise(res => {
+  const img = new Image();
+  img.onload = () => {
+    const k = Math.min(1, 800 / Math.max(img.width, img.height));
+    const c = document.createElement("canvas"); c.width = img.width*k; c.height = img.height*k;
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    c.toBlob(b => res(b), "image/jpeg", 0.85);
+  };
+  img.src = URL.createObjectURL(file);
+});
+
+$("aSave").onclick = async () => {
+  const name = $("aName").value.trim(), price = parseInt($("aPrice").value,10);
+  if(!name) return $("aErr").textContent="Tovar nomini yozing.";
+  if(!price || price<=0) return $("aErr").textContent="Narxni to'g'ri kiriting.";
+  const stock = parseInt($("aStock").value,10);
+  if(isNaN(stock) || stock<0) return $("aErr").textContent="Sonini kiriting (0 yoki undan katta).";
+  $("aSave").disabled = true; $("aSave").textContent = "Saqlanmoqda...";
+  const fd = new FormData();
+  fd.append("initData", tg.initData); fd.append("name", name); fd.append("price", price);
+  fd.append("cat", $("aCat").value.trim()); fd.append("stock", stock);
+  if(editId) fd.append("id", editId);
+  if(editPhoto) fd.append("photo", await compress(editPhoto), "p.jpg");
+  try {
+    const j = await (await fetch(API_BASE + "/api/admin/save", {method:"POST", body:fd})).json();
+    if(!j.ok) throw 0;
+    await loadProducts(); refreshShop(); renderAdmin();
+  } catch(e) { $("aErr").textContent = "Saqlab bo'lmadi. Qayta urinib ko'ring."; }
+  $("aSave").disabled = false; $("aSave").textContent = "Saqlash";
+};
+
+async function delP(id){
+  if(!confirm("Bu tovar o'chirilsinmi?")) return;
+  const fd = new FormData(); fd.append("initData", tg.initData); fd.append("id", id);
+  try {
+    await fetch(API_BASE + "/api/admin/delete", {method:"POST", body:fd});
+    await loadProducts(); refreshShop(); renderAdmin();
+  } catch(e) {}
+}
+
+(async () => {
+  await loadProducts();
+  renderChips(); renderShop(); badge();
+  checkAdmin();
+  const live = async () => {
+    if(document.hidden || $("v-shop").classList.contains("hide")) return;
+    await loadProducts(); refreshShop();
+  };
+  setInterval(live, 20000);
+  document.addEventListener("visibilitychange", live);
+})();
+</script>
+</body>
+</html>
